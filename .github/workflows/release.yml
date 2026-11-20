@@ -24,10 +24,10 @@ jobs:
       contents: write
       actions: write # start publish.yml: a release made with this token triggers no workflow by itself
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
