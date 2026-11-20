@@ -99,6 +99,18 @@ export interface FleetApi {
     /** Named storages only. */
     listStorages(kind: StorageKind): AsyncIterable<StorageItem>;
     deleteStorage(kind: StorageKind, id: string): Promise<void>;
+    /** The account's plan limits and current use; optional for custom implementations. */
+    accountLimits?(): Promise<AccountLimits | undefined>;
+}
+
+/** From `GET /v2/users/me/limits`; fields missing from the answer are undefined. */
+export interface AccountLimits {
+    maxConcurrentJobs?: number;
+    activeJobs?: number;
+    maxMemoryGbytes?: number;
+    usedMemoryGbytes?: number;
+    maxMonthlyUsd?: number;
+    monthlyUsd?: number;
 }
 
 export class ApiError extends Error {
@@ -211,6 +223,20 @@ export class HttpApi implements FleetApi {
         } catch (err) {
             if (!(err instanceof ApiError && err.status === 404)) throw err;
         }
+    }
+
+    async accountLimits(): Promise<AccountLimits | undefined> {
+        const d = await this.getOrUndefined<{ limits?: Record<string, unknown>; current?: Record<string, unknown> }>('/users/me/limits');
+        if (!d) return undefined;
+        const n = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : undefined);
+        return {
+            maxConcurrentJobs: n(d.limits?.maxConcurrentActorJobs),
+            activeJobs: n(d.current?.activeActorJobCount),
+            maxMemoryGbytes: n(d.limits?.maxActorMemoryGbytes),
+            usedMemoryGbytes: n(d.current?.actorMemoryGbytes),
+            maxMonthlyUsd: n(d.limits?.maxMonthlyUsageUsd),
+            monthlyUsd: n(d.current?.monthlyUsageUsd),
+        };
     }
 
     async listActors(): Promise<ActorSummary[]> {

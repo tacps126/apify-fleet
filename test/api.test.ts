@@ -103,6 +103,14 @@ test('every endpoint uses the documented path and method', async () => {
     assert.equal(calls[2]?.headers['content-type'], 'application/json');
 });
 
+test('account limits: GET /users/me/limits, numbers only', async () => {
+    const calls: Call[] = [];
+    const a = api([json({ data: { limits: { maxConcurrentActorJobs: 32, maxActorMemoryGbytes: 64, maxMonthlyUsageUsd: 'x' }, current: { activeActorJobCount: 1, actorMemoryGbytes: 4, monthlyUsageUsd: 2 } } }), json({}, 404)], calls);
+    assert.deepEqual(await a.accountLimits(), { maxConcurrentJobs: 32, activeJobs: 1, maxMemoryGbytes: 64, usedMemoryGbytes: 4, maxMonthlyUsd: undefined, monthlyUsd: 2 });
+    assert.equal(calls[0]?.url.pathname, '/v2/users/me/limits');
+    assert.equal(await a.accountLimits(), undefined);
+});
+
 test('custom base URL, and a non-JSON body passes through', async () => {
     const calls: Call[] = [];
     const a = new HttpApi({ token: 't', baseUrl: 'http://localhost:9/', fetch: fakeFetch([new Response('plain')], calls) });

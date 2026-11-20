@@ -15,7 +15,9 @@ First release.
 - `ls`: where each Actor lives, visibility, latest build, last run, users in 30 days.
 - `health`: failure rate, last success, typical and longest run, cost, public 30-day failure rate;
   `--fail-on` exit code for CI.
-- `push`: `apify push` in each folder with bounded concurrency and pass-through arguments.
+- `push`: `apify push` in each folder with pass-through arguments; as many at once as the account's free
+  job slots and memory allow (`--concurrency auto`, the default); dry run marks `update` or `new Actor`.
+- Other commands handle 8 Actors at once by default (`--concurrency <n>`).
 - `build`: rebuild from the source on Apify, optionally waiting for the result.
 - `clean builds`, `clean runs`, `clean storages`: age, keep-newest, status and name filters; tagged and
   unfinished items are never touched.

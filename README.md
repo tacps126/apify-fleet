@@ -38,7 +38,7 @@ in each folder.
 |---|---|---|
 | `ls` | Every Actor: on disk, on Apify or both; visibility, latest build, last run, users in 30 days | no |
 | `health` | Your recent runs per Actor: failure rate, last success, typical and longest run, cost; plus the Store's 30-day public failure rate | no |
-| `push` | `apify push` in each selected folder, a few at a time; arguments after `--` are passed on | yes |
+| `push` | `apify push` in each selected folder, several at once; arguments after `--` are passed on | yes |
 | `build` | Rebuild from the source already on Apify (for example to pick up a new base image) | yes |
 | `clean builds` | Delete old builds; keeps every tagged build and the newest `--keep` | yes |
 | `clean runs` | Delete old finished runs, optionally only some statuses and with their default storages | yes |
@@ -81,6 +81,18 @@ apify-fleet settings --tag browser --memory 4096 --standby off --apply
 ```
 
 Output is a table; `--json` prints the full report (every row, plus what changed) for scripts.
+
+### How much runs at once
+
+Every command works on several Actors in parallel. API commands (`ls`, `health`, `build`, `clean`,
+`sync`, `settings`) handle 8 at a time; API rate limits are retried with backoff.
+
+`push` starts a build on Apify for each Actor, and builds share your account's job slots and memory.
+By default (`--concurrency auto`) it reads your plan's limits and current use and runs as many pushes
+as fit: the free job slots, and the free memory divided by 4 GB per build, between 1 and 8. The dry
+run prints the number and why, marks each Actor `update` or `new Actor`, and warns when the account
+has reached its monthly usage limit. Without an account connection `push` still works, 4 at a time.
+Pushes to an Actor your token cannot change fail on their own row; the rest carry on.
 
 ## Repository layouts
 
@@ -149,7 +161,7 @@ silently.
 |---|---|---|
 | `--apply` | changing commands | dry run |
 | `--json` | all | table |
-| `--concurrency <n>` | all | 4 |
+| `--concurrency <n\|auto>` | all | 8; `push`: auto |
 | `--root <dir>` | all | `fleet.json` `root`, else the current folder |
 | `--config <file>` | all | `./fleet.json` if present |
 | `--older-than <30d>` | clean | 30 days (`d`, `h`, `m`, `s`) |

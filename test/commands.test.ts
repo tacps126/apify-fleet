@@ -4,7 +4,7 @@ import { build as buildCmd } from '../src/commands/build.js';
 import { clean } from '../src/commands/clean.js';
 import { duration, health, publicStats } from '../src/commands/health.js';
 import { ls } from '../src/commands/ls.js';
-import { push } from '../src/commands/push.js';
+import { autoPushes, push } from '../src/commands/push.js';
 import { settings, settingsUpdate } from '../src/commands/settings.js';
 import { listingDiff, listingWarnings, sync } from '../src/commands/sync.js';
 import { DEFAULT_OPTIONS, type Context, type Options, type Row } from '../src/commands/types.js';
@@ -63,6 +63,33 @@ test('push: dry run, apply with pass-through args, failures and missing CLI', as
     const noCli = await push(ctx(new FakeApi(), targets.slice(0, 1), true, {}, { runner: fakeRunner({ 'apify --version': { code: 127 } }) }));
     assert.match(noCli.rows[0]?.detail ?? '', /apify CLI not found/);
     assert.equal(noCli.failed, 1);
+});
+
+test('push --concurrency auto follows the account: free job slots and memory', async () => {
+    assert.deepEqual(autoPushes(undefined), { n: 4, why: 'account limits not readable' });
+    assert.deepEqual(autoPushes({}), { n: 4, why: 'account limits not readable' });
+    assert.deepEqual(autoPushes({ maxConcurrentJobs: 32, activeJobs: 2, maxMemoryGbytes: 64, usedMemoryGbytes: 0 }), {
+        n: 8,
+        why: '30 of 32 job slots free, 64 of 64 GB memory free',
+    });
+    assert.equal(autoPushes({ maxConcurrentJobs: 25, maxMemoryGbytes: 8, usedMemoryGbytes: 0 }).n, 2);
+    assert.equal(autoPushes({ maxConcurrentJobs: 5, activeJobs: 5 }).n, 1);
+
+    const api = new FakeApi().add({ id: 'a', name: 'a' });
+    api.limits = { maxConcurrentJobs: 32, activeJobs: 0, maxMemoryGbytes: 8, usedMemoryGbytes: 0, maxMonthlyUsd: 5, monthlyUsd: 5 };
+    const targets = [t('a', 'a', { path: '/p/a' }), t('b', undefined, { path: '/p/b' })];
+    const dry = await push(ctx(api, targets, false, {}, { concurrency: 0 }));
+    assert.deepEqual(dry.rows.map((r) => r.detail?.split(':')[0]), ['update', 'new Actor']);
+    assert.match(dry.notes.join('\n'), /2 push\(es\) at once \(32 of 32 job slots free, 8 of 8 GB memory free/);
+    assert.match(dry.notes.join('\n'), /monthly usage limit/);
+    const done = await push(ctx(api, targets, true, {}, { concurrency: 0, runner: fakeRunner({ 'apify --version': { stdout: '1' }, 'apify push': { code: 0 } }) }));
+    assert.match(done.rows[1]?.detail ?? '', /^new Actor, \d+s$/);
+
+    api.failOn.add('listActors');
+    const offline = await push(ctx(api, targets, false, {}, { concurrency: 0 }));
+    assert.match(offline.notes.join('\n'), /account not read .*4 push\(es\) at once \(account limits not readable/s);
+    const noApi = await push(ctx(api, targets, false, {}, { api: undefined as unknown as FakeApi }));
+    assert.equal(noApi.rows[0]?.detail, 'apify push (in /p/a)');
 });
 
 test('build picks the version, waits when asked, reports failures', async () => {

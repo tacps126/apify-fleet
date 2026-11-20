@@ -1,6 +1,6 @@
 /** In-memory FleetApi for tests: no network, records every change. */
 
-import type { ActorDetails, BuildItem, FleetApi, RunItem, StorageItem, StorageKind } from '../src/api.js';
+import type { AccountLimits, ActorDetails, BuildItem, FleetApi, RunItem, StorageItem, StorageKind } from '../src/api.js';
 import type { ExecResult, Runner } from '../src/util.js';
 
 export const NOW = Date.parse('2026-06-30T12:00:00Z');
@@ -14,6 +14,7 @@ export class FakeApi implements FleetApi {
     calls: string[] = [];
     failOn = new Set<string>();
     buildSteps: string[] = ['RUNNING', 'SUCCEEDED'];
+    limits?: AccountLimits;
 
     add(actor: Partial<ActorDetails> & { id: string; name: string }, builds: BuildItem[] = [], runs: RunItem[] = []) {
         this.actors.set(actor.id, { username: 'me', ...actor });
@@ -25,6 +26,11 @@ export class FakeApi implements FleetApi {
     private check(call: string) {
         this.calls.push(call);
         for (const f of this.failOn) if (call.startsWith(f)) throw new Error(`boom: ${call}`);
+    }
+
+    async accountLimits() {
+        this.check('accountLimits');
+        return this.limits;
     }
 
     async listActors() {

@@ -47,7 +47,8 @@ Options
   --tag <tag>             Only Actors with this tag (repeatable)
   --changed <ref>         Only Actors whose folder changed since a git ref (e.g. origin/main)
   --all                   Every Actor (needed for changing commands without other filters)
-  --concurrency <n>       Actors handled at once (default 4)
+  --concurrency <n|auto>  Actors handled at once (default 8; push: auto, from the account's
+                          free job slots and memory)
   --quiet                 No progress lines on stderr
 
   clean:    --older-than <30d>  --keep <3>  --status FAILED,ABORTED  --with-storages
@@ -96,6 +97,10 @@ const OPTIONS = {
 
 const COMMANDS = ['ls', 'health', 'push', 'build', 'clean', 'sync', 'settings'];
 const READ_ONLY = new Set(['ls', 'health']);
+/** Actors handled at once by API commands. */
+export const DEFAULT_CONCURRENCY = 8;
+/** `--concurrency auto`: the command decides (push: from the account's limits). */
+const AUTO = 0;
 
 export interface Deps {
     env?: NodeJS.ProcessEnv;
@@ -139,22 +144,28 @@ export async function main(argv: string[], deps: Deps = {}): Promise<number> {
         if (passthrough.length && command !== 'push') throw new UsageError('arguments after -- are only for push');
 
         const opts = options(values, passthrough);
-        const concurrency = int(values.concurrency, 'concurrency', 4, 1);
+        const concurrency =
+            values.concurrency === 'auto' || values.concurrency === undefined
+                ? command === 'push'
+                    ? AUTO
+                    : DEFAULT_CONCURRENCY
+                : int(values.concurrency, 'concurrency', DEFAULT_CONCURRENCY, 1);
         const cwd = deps.cwd ?? process.cwd();
         const config = loadConfig(cwd, values.config);
         const runner = deps.runner ?? runProcess;
+        // push works from disk alone; the account (when reachable) only adds limits and new/update.
         const needsApi = command !== 'push';
         let api = deps.api;
-        if (!api && needsApi) {
+        if (!api) {
             const env = deps.env ?? process.env;
             const token = findToken(env, deps.home);
             if (token) {
                 api = new HttpApi({ token, baseUrl: env.APIFY_API_BASE_URL, fetch: deps.fetch });
             } else if ((await runner('apify', ['--version'], cwd)).code === 0) {
                 // Logged in with a newer Apify CLI (token in the system keychain): go through it.
-                if (!values.quiet && !values.json) err('apify-fleet: no APIFY_TOKEN; using the Apify CLI login (slower)\n');
+                if (needsApi && !values.quiet && !values.json) err('apify-fleet: no APIFY_TOKEN; using the Apify CLI login (slower)\n');
                 api = new HttpApi({ token: '', fetch: cliFetch(runner, 'apify', cwd) });
-            } else {
+            } else if (needsApi) {
                 throw new UsageError('no Apify token: set APIFY_TOKEN or run "apify login"');
             }
         }
