@@ -35,6 +35,8 @@ jobs:
       - name: Use npm 11.5.1 or newer (trusted publishing)
         run: npm install -g npm@latest
       - name: Publish
+        env:
+          NPM_PUBLISH_MODE: ${{ vars.NPM_PUBLISH_MODE }}
         run: |
           name=$(node -p 'require("./package.json").name')
           version=$(node -p 'require("./package.json").version')
@@ -44,7 +46,15 @@ jobs:
           fi
           # No token: npm trusted publishing exchanges this job's OIDC identity
           # (id-token: write) for a one-time publish credential, with provenance.
-          case "$version" in
-            *-*) npm publish --access public --tag next ;;
-            *) npm publish --access public ;;
-          esac
+          # NPM_PUBLISH_MODE (repository variable): "stage" (default) puts the
+          # version in npm's staging area for you to approve on npmjs.com with
+          # two-factor authentication; "publish" makes it live at once (the
+          # trusted publisher must have "Allow npm publish" ticked).
+          tag=latest
+          case "$version" in *-*) tag=next ;; esac
+          if [ "$NPM_PUBLISH_MODE" = publish ]; then
+            npm publish --access public --tag "$tag"
+          else
+            npm stage publish --access public --tag "$tag"
+            echo "::notice::$name@$version is staged: approve it on npmjs.com (package, Staged packages)"
+          fi
