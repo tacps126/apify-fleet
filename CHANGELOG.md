@@ -9,6 +9,8 @@ All notable changes. Versions follow [Semantic Versioning](https://semver.org/).
 First release.
 
 - Fleet from disk (`.actor/actor.json`), optional `fleet.json` and the account's Actors through the API.
+- Any layout: one Actor per repository, many under one folder, folders in other repositories via
+  `fleet.json` paths, `--root`; two folders with one Actor name stop with both paths named.
 - Select Actors by name, id, glob, tag, `--changed <git-ref>` (with watched shared folders) or `--all`.
 - `ls`: where each Actor lives, visibility, latest build, last run, users in 30 days.
 - `health`: failure rate, last success, typical and longest run, cost, public 30-day failure rate;

@@ -8,7 +8,7 @@ import { report, type Context, type Report, type Row } from './types.js';
 export async function push(ctx: Context): Promise<Report> {
     const columns = ['actor', 'status', 'detail'];
     const local = ctx.targets.filter((t) => t.path);
-    const skipped: Row[] = ctx.targets.filter((t) => !t.path).map((t) => ({ actor: t.name, status: 'skipped', detail: 'no local folder' }));
+    const skipped: Row[] = ctx.targets.filter((t) => !t.path).map((t) => ({ actor: t.name, status: 'skipped', detail: 'no local folder (Git-sourced? use build)' }));
     const args = ['push', ...ctx.opts.passthrough];
     if (!ctx.apply) {
         const rows = local.map((t) => ({ actor: t.name, status: 'would-push', detail: `apify ${args.join(' ')} (in ${t.path})` }));

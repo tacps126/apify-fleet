@@ -82,6 +82,22 @@ apify-fleet settings --tag browser --memory 4096 --standby off --apply
 
 Output is a table; `--json` prints the full report (every row, plus what changed) for scripts.
 
+## Repository layouts
+
+Any folder with `.actor/actor.json` is an Actor; its name comes from that file. No folder naming,
+monorepo tooling or shared code is assumed.
+
+| Your setup | What to do |
+|---|---|
+| One Actor, one repository | Run `apify-fleet` in the repository; the Actor is the root folder itself. |
+| Many Actors under one folder, any depth (up to 6 levels) | Run it at the top. `node_modules`, `dist`, `build`, `target`, `storage`, virtualenvs and hidden folders are skipped. |
+| One repository per Actor, side by side | Run it in the parent folder, or list each folder in `fleet.json` (`"path": "../shop-products"`) with `"discover": false`. |
+| Actors built on Apify from a Git repository, with no folder here | `ls`, `health`, `build`, `clean`, `sync` and `settings` work through the API; `push` skips them (`build` rebuilds from the repository). |
+| Only some folders are yours (templates, old copies) | Narrow with `--root <dir>` or `fleet.json` `root`, or list the Actors with `"discover": false`. |
+| The same Actor name in two folders | `apify-fleet` stops and names both folders. Set `actors.<name>.path` to the one to use; to push the other copy to a second Actor, add it under another name with its own `path`. |
+
+Actors on your account but not on disk, and folders not yet on your account, both appear in `ls`.
+
 ## fleet.json (optional)
 
 Put it at the root of your Actors repository, or point to it with `--config`.
@@ -112,10 +128,10 @@ Put it at the root of your Actors repository, or point to it with `--config`.
 
 | Key | Meaning |
 |---|---|
-| `root` | Where to look for Actor folders (default: the config's folder) |
+| `root` | Where to look for Actor folders (default: the config's folder; `--root` overrides) |
 | `discover` | `false` to use only the Actors listed here |
 | `defaults` | `tags`, `listing` and `settings` every Actor starts from |
-| `actors.<name>.path` | Folder with `.actor/actor.json`, if it is not found by name |
+| `actors.<name>.path` | Folder with `.actor/actor.json`, relative to `fleet.json`: one outside `root` (another repository), or the one to use when two folders share a name |
 | `actors.<name>.id` | Actor id or `username~name`, if the name alone is not enough |
 | `actors.<name>.tags` | For `--tag` |
 | `actors.<name>.watch` | Extra folders (shared code) that count as changes for `--changed` |
@@ -134,6 +150,8 @@ silently.
 | `--apply` | changing commands | dry run |
 | `--json` | all | table |
 | `--concurrency <n>` | all | 4 |
+| `--root <dir>` | all | `fleet.json` `root`, else the current folder |
+| `--config <file>` | all | `./fleet.json` if present |
 | `--older-than <30d>` | clean | 30 days (`d`, `h`, `m`, `s`) |
 | `--keep <n>` | clean builds, clean runs | 3 newest |
 | `--status <list>` | clean runs | all finished statuses |

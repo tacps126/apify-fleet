@@ -47,6 +47,30 @@ test('discover: false and root narrow what is read from disk; no api means no re
     assert.deepEqual((await buildFleet({ config: parseConfig({ root: 'sub' }, root) })).map((t) => t.name), ['b']);
 });
 
+test('layouts: one Actor at the root, Actors in other repos, an explicit root', async () => {
+    const single = tree({ '.actor/actor.json': actorJson('solo'), 'src/x.ts': '' });
+    assert.deepEqual((await buildFleet({ config: parseConfig({}, single) })).map((t) => [t.name, t.path]), [['solo', single]]);
+
+    const ws = tree({ 'repo-a/.actor/actor.json': actorJson('a'), 'repo-b/.actor/actor.json': actorJson('b'), 'tools/fleet.json': {} });
+    const config = parseConfig({ discover: false, actors: { a: { path: '../repo-a' }, b: { path: '../repo-b' } } }, join(ws, 'tools'));
+    const by = await buildFleet({ config });
+    assert.deepEqual(by.map((t) => [t.name, t.path]), [['a', join(ws, 'repo-a')], ['b', join(ws, 'repo-b')]]);
+    assert.equal(by[0]?.version, '0.1');
+
+    assert.deepEqual((await buildFleet({ config: parseConfig({}, ws), root: join(ws, 'repo-b') })).map((t) => t.name), ['b']);
+});
+
+test('two folders with one Actor name: refused unless fleet.json says which', async () => {
+    const root = tree({ 'actors/x/.actor/actor.json': actorJson('x'), 'old/x-copy/.actor/actor.json': actorJson('x'), 'y/.actor/actor.json': actorJson('y') });
+    await assert.rejects(buildFleet({ config: parseConfig({}, root) }), /2 folders define Actor "x" \(actors\/x, old\/x-copy\)/);
+    const pinned = await buildFleet({ config: parseConfig({ actors: { x: { path: 'actors/x' } } }, root) });
+    assert.deepEqual(pinned.map((t) => [t.name, t.path]), [['x', join(root, 'actors/x')], ['y', join(root, 'y')]]);
+    // Both kept under different names (e.g. the same code pushed to two Actors).
+    const both = await buildFleet({ config: parseConfig({ actors: { 'x-eu': { path: 'old/x-copy' } } }, root) });
+    assert.deepEqual(both.map((t) => [t.name, t.path]), [['x', join(root, 'actors/x')], ['x-eu', join(root, 'old/x-copy')], ['y', join(root, 'y')]]);
+    assert.deepEqual((await buildFleet({ config: parseConfig({ root: 'actors' }, root) })).map((t) => t.name), ['x']);
+});
+
 const fleet: Target[] = ['alpha-scraper', 'beta-scraper', 'gamma'].map((name, i) => ({ name, id: `id${i}`, tags: i ? ['b'] : ['a'], watch: [], path: `/repo/actors/${name}` }));
 
 test('select by name, id, glob and tag; refuses an unscoped change', async () => {

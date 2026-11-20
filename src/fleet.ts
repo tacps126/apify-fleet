@@ -6,7 +6,7 @@
 import { isAbsolute, resolve } from 'node:path';
 import type { ActorSummary, FleetApi } from './api.js';
 import type { FleetConfig, Listing, Settings } from './config.js';
-import { discoverActors, posixRelative, type LocalActor } from './discover.js';
+import { discoverActors, posixRelative, readActor, type LocalActor } from './discover.js';
 import { globToRegExp, isGlob, type Runner, UsageError } from './util.js';
 
 export interface Target {
@@ -36,11 +36,13 @@ export interface BuildOptions {
     /** Fetch the account's Actors (needed by every command that talks to Apify). */
     api?: FleetApi;
     local?: LocalActor[];
+    /** Folder to look for Actors under; overrides fleet.json `root`. */
+    root?: string;
 }
 
 /** Merges fleet.json, disk and account into one list, sorted by name. */
-export async function buildFleet({ config, api, local }: BuildOptions): Promise<Target[]> {
-    const root = resolve(config.dir, config.root ?? '.');
+export async function buildFleet({ config, api, local, root: rootDir }: BuildOptions): Promise<Target[]> {
+    const root = rootDir ?? resolve(config.dir, config.root ?? '.');
     const onDisk = local ?? (config.discover === false ? [] : discoverActors(root));
     const byName = new Map<string, Target>();
     const get = (name: string) => {
@@ -51,8 +53,21 @@ export async function buildFleet({ config, api, local }: BuildOptions): Promise<
         }
         return t;
     };
-    for (const actor of onDisk) {
-        const t = get(actor.name);
+    const pinned = new Set(Object.values(config.actors).flatMap((e) => (e.path ? [resolve(config.dir, e.path)] : [])));
+    const folders = new Map<string, LocalActor[]>();
+    for (const actor of onDisk) folders.set(actor.name, [...(folders.get(actor.name) ?? []), actor]);
+    for (const [name, found] of folders) {
+        // Folders claimed by a fleet.json path are placed below; the rest must be one per name.
+        const free = found.length > 1 ? found.filter((a) => !pinned.has(a.path)) : found;
+        if (free.length > 1 && !config.actors[name]?.path) {
+            const where = free.map((a) => posixRelative(config.dir, a.path) || '.').join(', ');
+            throw new UsageError(
+                `${free.length} folders define Actor "${name}" (${where}): set actors["${name}"].path in fleet.json, or narrow --root`,
+            );
+        }
+        const actor = free[0];
+        if (!actor || config.actors[name]?.path) continue;
+        const t = get(name);
         t.path = actor.path;
         t.version = actor.version;
         t.listing = actor.listing;
@@ -61,11 +76,12 @@ export async function buildFleet({ config, api, local }: BuildOptions): Promise<
         const t = get(name);
         if (entry.path) {
             t.path = resolve(config.dir, entry.path);
-            const disk = onDisk.find((a) => a.path === t.path);
+            const disk = onDisk.find((a) => a.path === t.path) ?? readActor(t.path);
             if (disk) {
                 t.version ??= disk.version;
                 t.listing ??= disk.listing;
-                if (disk.name !== name) byName.delete(disk.name);
+                // Renamed in fleet.json: drop the entry discovery made for this folder.
+                if (disk.name !== name && byName.get(disk.name)?.path === disk.path && !config.actors[disk.name]) byName.delete(disk.name);
             }
         }
         if (entry.id) t.id = entry.id;

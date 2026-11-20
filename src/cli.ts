@@ -17,6 +17,7 @@ import { cliFetch } from './cli-transport.js';
 import { checkMemory, checkTimeout, loadConfig } from './config.js';
 import { findToken } from './discover.js';
 import { buildFleet, select } from './fleet.js';
+import { resolve } from 'node:path';
 import { renderJson, renderTable } from './render.js';
 import { errorText, parseDuration, runProcess, UsageError, type Runner } from './util.js';
 import { VERSION } from './version.js';
@@ -42,6 +43,7 @@ Options
   --apply                 Make the changes (default: show what would change)
   --json                  Print the full report as JSON
   --config <file>         Config file (default: ./fleet.json if present)
+  --root <dir>            Look for Actor folders here (default: fleet.json root, else .)
   --tag <tag>             Only Actors with this tag (repeatable)
   --changed <ref>         Only Actors whose folder changed since a git ref (e.g. origin/main)
   --all                   Every Actor (needed for changing commands without other filters)
@@ -64,6 +66,7 @@ const OPTIONS = {
     apply: { type: 'boolean' },
     json: { type: 'boolean' },
     config: { type: 'string' },
+    root: { type: 'string' },
     tag: { type: 'string', multiple: true },
     changed: { type: 'string' },
     all: { type: 'boolean' },
@@ -156,7 +159,7 @@ export async function main(argv: string[], deps: Deps = {}): Promise<number> {
             }
         }
         const log = values.quiet || values.json ? () => {} : (line: string) => err(`${line}\n`);
-        const fleet = cleanKind === 'storages' ? [] : await buildFleet({ config, api: needsApi ? api : undefined });
+        const fleet = cleanKind === 'storages' ? [] : await buildFleet({ config, api: needsApi ? api : undefined, root: values.root === undefined ? undefined : resolve(cwd, values.root) });
         const targets =
             cleanKind === 'storages'
                 ? []

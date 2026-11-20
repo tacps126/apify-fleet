@@ -113,6 +113,18 @@ test('push needs no token and passes args after --; clean storages skips the fle
     assert.match(s.stdout, /No Actors selected/);
 });
 
+test('--root picks where Actor folders are found; duplicate names exit 2', async () => {
+    const cwd = fleetDir();
+    const r = await cli(['push', '--all', '--root', 'two'], { cwd, runner: fakeRunner({}) });
+    assert.equal(r.code, 0);
+    assert.match(r.stdout, /two/);
+    assert.doesNotMatch(r.stdout, /would-push.*\/one\b/);
+    const dup = tree({ 'a/.actor/actor.json': actorJson('same'), 'b/.actor/actor.json': actorJson('same') });
+    const d = await cli(['push', '--all'], { cwd: dup, runner: fakeRunner({}) });
+    assert.equal(d.code, 2);
+    assert.match(d.stderr, /2 folders define Actor "same" \(a, b\)/);
+});
+
 test('token from env or the login file builds the HTTP client', async () => {
     const seen: string[] = [];
     const fetch = (async (url: URL, init: RequestInit) => {
