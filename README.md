@@ -26,8 +26,11 @@ npm install -g apify-fleet
 
 or run it without installing: `npx apify-fleet ls`.
 
-It uses your Apify API token from `APIFY_TOKEN`, or the one saved by `apify login`. `push` calls the
-Apify CLI (`npm install -g apify-cli`) in each folder.
+It uses your Apify API token from `APIFY_TOKEN`, or the one saved by `apify login`. Newer Apify CLI
+versions keep the login in the system keychain; then `apify-fleet` sends its requests through
+`apify api`, so your login works without the token ever being read (slower: one process per request,
+so set `APIFY_TOKEN` for large fleets or CI). `push` calls the Apify CLI (`npm install -g apify-cli`)
+in each folder.
 
 ## Commands
 
@@ -154,7 +157,8 @@ Exit codes: `0` done, `1` some actions failed, `2` bad usage, `3` health alarm (
 - `clean storages` only looks at named storages, only those matching `--match`, and only those not
   modified or read within `--older-than`.
 - `settings` and `sync` send only the fields that differ, and keep the rest of the Actor as it is.
-- The token is sent only to the Apify API and never printed.
+- The token is sent only to the Apify API and never printed. Without `APIFY_TOKEN`, a keychain login
+  is used through the Apify CLI and never read by `apify-fleet`.
 
 ## Use from code
 

@@ -65,7 +65,9 @@ export type Runner = (cmd: string, args: string[], cwd: string) => Promise<ExecR
 
 export const runProcess: Runner = (cmd, args, cwd) =>
     new Promise((resolve) => {
-        const child = spawn(cmd, args, { cwd, shell: process.platform === 'win32', env: process.env });
+        const child = spawn(cmd, args, { cwd, shell: process.platform === 'win32', env: process.env, stdio: ['pipe', 'pipe', 'pipe'] });
+        // Empty, closed stdin: no prompt can hang, and tools that probe stdin see end of input at once.
+        child.stdin.end();
         let stdout = '';
         let stderr = '';
         child.stdout.on('data', (d: Buffer) => (stdout += d.toString()));

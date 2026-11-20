@@ -13,6 +13,7 @@ import { push } from './commands/push.js';
 import { settings } from './commands/settings.js';
 import { sync } from './commands/sync.js';
 import { DEFAULT_OPTIONS, type Context, type Options, type Report } from './commands/types.js';
+import { cliFetch } from './cli-transport.js';
 import { checkMemory, checkTimeout, loadConfig } from './config.js';
 import { findToken } from './discover.js';
 import { buildFleet, select } from './fleet.js';
@@ -54,7 +55,8 @@ Options
   settings: --memory <mb>  --timeout <secs>  --standby on|off
   build:    --wait  --build-tag <latest>  --actor-version <0.1>
 
-Token: APIFY_TOKEN, else the one saved by "apify login".
+Token: APIFY_TOKEN, else the one saved by "apify login" (older CLI), else requests go
+through "apify api" so a keychain login of a newer CLI works too.
 Exit codes: 0 done, 1 some actions failed, 2 bad usage, 3 health alarm.
 `;
 
@@ -143,8 +145,15 @@ export async function main(argv: string[], deps: Deps = {}): Promise<number> {
         if (!api && needsApi) {
             const env = deps.env ?? process.env;
             const token = findToken(env, deps.home);
-            if (!token) throw new UsageError('no Apify token: set APIFY_TOKEN or run "apify login"');
-            api = new HttpApi({ token, baseUrl: env.APIFY_API_BASE_URL, fetch: deps.fetch });
+            if (token) {
+                api = new HttpApi({ token, baseUrl: env.APIFY_API_BASE_URL, fetch: deps.fetch });
+            } else if ((await runner('apify', ['--version'], cwd)).code === 0) {
+                // Logged in with a newer Apify CLI (token in the system keychain): go through it.
+                if (!values.quiet && !values.json) err('apify-fleet: no APIFY_TOKEN; using the Apify CLI login (slower)\n');
+                api = new HttpApi({ token: '', fetch: cliFetch(runner, 'apify', cwd) });
+            } else {
+                throw new UsageError('no Apify token: set APIFY_TOKEN or run "apify login"');
+            }
         }
         const log = values.quiet || values.json ? () => {} : (line: string) => err(`${line}\n`);
         const fleet = cleanKind === 'storages' ? [] : await buildFleet({ config, api: needsApi ? api : undefined });

@@ -21,4 +21,6 @@ First release.
   fields only, with length warnings.
 - `settings`: memory, timeout, build tag, restart on error and Standby, changed fields only.
 - Dry run by default, `--apply` to change; `--json` reports; exit codes 0, 1, 2, 3.
+- Token from `APIFY_TOKEN` or `apify login`; with a keychain (OAuth) login of a newer Apify CLI,
+  requests go through `apify api` instead, retrying when concurrent CLI calls race.
 - JSON schema for `fleet.json`; no runtime dependencies.

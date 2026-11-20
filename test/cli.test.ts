@@ -45,7 +45,6 @@ test('usage errors exit 2', async () => {
         [['clean'], /clean what\?/],
         [['ls', '--bogus'], /Unknown option '--bogus'/],
         [['ls', '--', 'x'], /only for push/],
-        [['ls'], /no Apify token/],
         [['ls', '--keep=-1'], /--keep: expected a whole number >= 0/],
         [['ls', '--days', 'x'], /--days: expected a number/],
         [['ls', '--max-fail-rate', '2'], /fraction/],
@@ -126,6 +125,20 @@ test('token from env or the login file builds the HTTP client', async () => {
     const home = tree({ '.apify/auth.json': { token: 'saved' } });
     await cli(['ls'], { cwd: fleetDir(), home, fetch });
     assert.match(seen[1] ?? '', /^https:\/\/api\.apify\.com\/v2\/acts.* Bearer saved$/);
+});
+
+test('no token: uses the Apify CLI login when the CLI exists, else explains', async () => {
+    const calls: string[] = [];
+    const runner = fakeRunner({ 'apify --version': { stdout: '1.12' }, 'apify api*': { stdout: '{"data":{"items":[],"total":0}}' } }, calls);
+    const r = await cli(['ls'], { cwd: fleetDir(), runner });
+    assert.equal(r.code, 0);
+    assert.match(r.stderr, /using the Apify CLI login/);
+    assert.ok(calls.some((c) => c.startsWith('apify api -X GET /v2/acts')));
+    const quiet = await cli(['ls', '--json'], { cwd: fleetDir(), runner });
+    assert.equal(quiet.stderr, '');
+    const none = await cli(['ls'], { cwd: fleetDir(), runner: fakeRunner({ 'apify --version': { code: 127 } }) });
+    assert.equal(none.code, 2);
+    assert.match(none.stderr, /no Apify token/);
 });
 
 test('options parsing', () => {
