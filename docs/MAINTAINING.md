@@ -53,12 +53,16 @@ repository variable `PUBLISH_ENABLED` is `true`, and skips versions already on n
    (recommended): each release is then staged and goes live only when you approve it on npmjs.com
    (the package, Staged packages) with your two-factor code. To publish with no approval instead,
    tick "Allow npm publish" and set the repository variable `NPM_PUBLISH_MODE` = `publish`. "Allow
-   npm dist-tag" is not needed. Set up connection, then under Publishing access choose "Require
+   npm dist-tag" is not needed. Label is optional and only for you (for example
+   `GitHub Actions release`). Set up connection, then under Publishing access choose "Require
    two-factor authentication and disallow tokens". The trusted publisher must
    publish once within 2 days of being added, or it expires: do step 4 soon after.
 3. **GitHub:** Settings, Environments: create `npm` (optionally add yourself as a required reviewer,
    so every publish waits for your click). Settings, Secrets and variables, Actions, Variables: add
    `PUBLISH_ENABLED` = `true`. No secrets are needed.
+   In each environment, under Deployment branches and tags, choose "Selected branches and tags"
+   and add the branch `main` and the tag pattern `v*`: publishing then runs only for release tags
+   and from `main`, never from another branch.
 4. **Check it:** bump the version in a pull request and merge it (Releasing, above). The Release
    workflow tags it and starts Publish. A release made before publishing was on can be published
    from Actions, Publish, Run workflow, tag `vX.Y.Z`.
