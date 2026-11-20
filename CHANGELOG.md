@@ -4,6 +4,11 @@ All notable changes. Versions follow [Semantic Versioning](https://semver.org/).
 
 ## Unreleased
 
+## 0.1.1
+
+- Published to npm from GitHub Actions with trusted publishing (no stored token), with provenance.
+- Dependencies: GitHub Actions updated; TypeScript stays on 6.x until typescript-eslint supports 7.
+
 ## 0.1.0
 
 First release.
