@@ -1,0 +1,25 @@
+# Weekly cleanup: old builds (keeps tagged ones and the newest 3), finished runs
+# older than 30 days, and leftover named storages starting with "tmp-". Run it
+# once by hand without --apply first to see what it would delete.
+name: Fleet cleanup
+
+on:
+  schedule:
+    - cron: "41 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  clean:
+    runs-on: ubuntu-latest
+    env:
+      APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
+    steps:
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - run: npx --yes apify-fleet clean builds --all --older-than 14d --keep 3 --apply
+      - run: npx --yes apify-fleet clean runs --all --older-than 30d --keep 20 --apply
+      - run: npx --yes apify-fleet clean storages --match "tmp-*" --older-than 7d --apply

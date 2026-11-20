@@ -1,0 +1,35 @@
+# Push only the Actors whose folder (or watched shared folder) changed in the
+# merged commits. Needs the Apify CLI and APIFY_TOKEN as a repository secret.
+name: Push changed Actors
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: push-actors
+  cancel-in-progress: false
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    env:
+      APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - run: npm install -g apify-cli apify-fleet
+      - run: apify login --token "$APIFY_TOKEN"
+      - name: Push
+        run: apify-fleet push --changed "${{ github.event.before }}" --concurrency 2 --apply
+      - name: Listing text and settings from fleet.json
+        run: |
+          apify-fleet sync --changed "${{ github.event.before }}" --apply
+          apify-fleet settings --changed "${{ github.event.before }}" --apply

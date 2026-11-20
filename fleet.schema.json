@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/tacps126/apify-fleet/fleet.schema.json",
+  "title": "apify-fleet config",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "root": { "type": "string", "description": "Where to look for Actor folders, relative to this file" },
+    "discover": { "type": "boolean", "description": "Look for Actor folders under root (default true)" },
+    "defaults": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tags": { "$ref": "#/$defs/strings" },
+        "listing": { "$ref": "#/$defs/listing" },
+        "settings": { "$ref": "#/$defs/settings" }
+      }
+    },
+    "actors": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "path": { "type": "string", "description": "Folder holding .actor/actor.json" },
+          "id": { "type": "string", "description": "Actor id or username~name" },
+          "tags": { "$ref": "#/$defs/strings" },
+          "watch": { "$ref": "#/$defs/strings", "description": "Extra folders that count as changes for --changed" },
+          "listing": { "$ref": "#/$defs/listing" },
+          "settings": { "$ref": "#/$defs/settings" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "strings": { "type": "array", "items": { "type": "string" } },
+    "listing": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "seoTitle": { "type": "string", "description": "Search results cut it after about 60 characters" },
+        "seoDescription": { "type": "string", "description": "Search results cut it after about 200 characters" },
+        "categories": { "type": "array", "items": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" } }
+      }
+    },
+    "settings": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "memoryMbytes": { "type": "integer", "enum": [128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768] },
+        "timeoutSecs": { "type": "integer", "minimum": 0 },
+        "build": { "type": "string", "description": "Build tag runs use by default, e.g. latest" },
+        "restartOnError": { "type": "boolean" },
+        "standby": { "type": "boolean" }
+      }
+    }
+  }
+}

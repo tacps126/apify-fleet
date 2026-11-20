@@ -1,0 +1,26 @@
+# Nightly health check: fails (and emails you, if notifications are on) when any
+# Actor is failing or has not succeeded for two days. Add APIFY_TOKEN as a
+# repository secret. Copy to .github/workflows/ in your Actors repository.
+name: Fleet health
+
+on:
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - name: Check
+        env:
+          APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
+        # bash runs with pipefail here, so the exit code of apify-fleet decides the job.
+        run: npx --yes apify-fleet health --days 1 --stale-days 2 --fail-on failing,stale | tee -a "$GITHUB_STEP_SUMMARY"

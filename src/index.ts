@@ -1,0 +1,25 @@
+/** Programmatic use: the same pieces the CLI is built from. */
+export { ApiError, HttpApi, STORAGE_KINDS, TERMINAL } from './api.js';
+export type { ActorDetails, ActorSummary, BuildItem, FleetApi, HttpApiOptions, RunItem, StorageItem, StorageKind } from './api.js';
+export { main, USAGE } from './cli.js';
+export type { Deps } from './cli.js';
+export { build } from './commands/build.js';
+export { clean, CLEAN_KINDS } from './commands/clean.js';
+export type { CleanKind } from './commands/clean.js';
+export { health } from './commands/health.js';
+export { ls } from './commands/ls.js';
+export { push } from './commands/push.js';
+export { settings, settingsUpdate } from './commands/settings.js';
+export { listingDiff, sync } from './commands/sync.js';
+export { DEFAULT_OPTIONS } from './commands/types.js';
+export type { Context, Options, Report, Row } from './commands/types.js';
+export { loadConfig, parseConfig } from './config.js';
+export type { ActorEntry, FleetConfig, Listing, Settings } from './config.js';
+export { discoverActors, findToken } from './discover.js';
+export type { LocalActor } from './discover.js';
+export { buildFleet, select } from './fleet.js';
+export type { Selector, Target } from './fleet.js';
+export { renderJson, renderTable } from './render.js';
+export { runProcess } from './util.js';
+export type { ExecResult, Runner } from './util.js';
+export { VERSION } from './version.js';

@@ -1,0 +1,22 @@
+name: Feature request
+description: A new command, option or integration
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What do you do by hand today?
+      description: The repetitive task across many Actors this would save.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like?
+      description: The command or option, and which Apify API endpoints it would use, if you know.
+  - type: checkboxes
+    id: help
+    attributes:
+      label: Contribution
+      options:
+        - label: I can open a pull request for this

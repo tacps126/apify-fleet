@@ -1,0 +1,63 @@
+{
+  "name": "apify-fleet",
+  "version": "0.1.0",
+  "description": "Manage many Apify Actors at once: bulk push, rebuild, cleanup of old builds, runs and storages, Store listing sync, run settings and fleet health.",
+  "keywords": [
+    "apify",
+    "actors",
+    "cli",
+    "bulk",
+    "cleanup",
+    "devops",
+    "web-scraping"
+  ],
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "apify-fleet": "dist/cli.js"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "fleet.schema.json"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tacps126/apify-fleet.git"
+  },
+  "bugs": {
+    "url": "https://github.com/tacps126/apify-fleet/issues"
+  },
+  "homepage": "https://github.com/tacps126/apify-fleet#readme",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "build:test": "tsc -p tsconfig.json",
+    "pretest": "npm run build:test",
+    "test": "node --test \".build/test/*.test.js\"",
+    "coverage": "npm run build:test && node --test --experimental-test-coverage --test-coverage-lines=95 --test-coverage-branches=85 --test-coverage-functions=95 --test-coverage-exclude=\".build/test/**\" \".build/test/*.test.js\"",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "check": "npm run lint && npm run typecheck && npm run coverage",
+    "prepack": "npm run build"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.6.6",
+    "eslint": "^10.15.0",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.73.0"
+  }
+}

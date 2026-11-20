@@ -1,0 +1,68 @@
+# On every push to main: if the version in package.json has no tag yet, build
+# the package, tag vX.Y.Z and create a GitHub Release with the changelog
+# section and the packed tarball. Releasing = merging a pull request that bumps
+# the version (see docs/MAINTAINING.md). Publishing to npm is a separate, opt-in
+# workflow (publish.yml).
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write # start publish.yml: a release made with this token triggers no workflow by itself
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - name: Version
+        id: v
+        run: |
+          node scripts/release-info.mjs check
+          version=$(node scripts/release-info.mjs version)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if git rev-parse -q --verify "refs/tags/v$version" >/dev/null; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "v$version is already released; nothing to do." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Build and pack
+        if: steps.v.outputs.exists == 'false'
+        run: |
+          npm ci
+          mkdir -p out
+          npm pack --pack-destination out
+      - name: Tag and create the GitHub Release
+        if: steps.v.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.v.outputs.version }}
+        run: |
+          node scripts/release-info.mjs notes > notes.md
+          prerelease=""
+          case "$VERSION" in *-*) prerelease="--prerelease" ;; esac
+          gh release create "v$VERSION" out/* --target "$GITHUB_SHA" --title "v$VERSION" --notes-file notes.md $prerelease
+          echo "Released v$VERSION" >> "$GITHUB_STEP_SUMMARY"
+      - name: Start Publish (it does nothing until PUBLISH_ENABLED is true)
+        if: steps.v.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.v.outputs.version }}
+        run: gh workflow run publish.yml -f tag="v$VERSION"

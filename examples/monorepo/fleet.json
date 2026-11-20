@@ -1,0 +1,22 @@
+{
+  "$schema": "../../fleet.schema.json",
+  "defaults": {
+    "settings": { "memoryMbytes": 1024, "timeoutSecs": 3600 }
+  },
+  "actors": {
+    "shop-products": {
+      "tags": ["ecommerce", "browser"],
+      "watch": ["packages/shared"],
+      "listing": {
+        "seoTitle": "Shop Products Scraper",
+        "seoDescription": "Extract product names, prices and stock levels from online shops into a clean dataset.",
+        "categories": ["ECOMMERCE", "AUTOMATION"]
+      },
+      "settings": { "memoryMbytes": 4096 }
+    },
+    "news-feed": {
+      "tags": ["news"],
+      "settings": { "standby": false }
+    }
+  }
+}
