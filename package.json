@@ -1,6 +1,6 @@
 {
   "name": "apify-fleet",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Manage many Apify Actors at once: bulk push, rebuild, cleanup of old builds, runs and storages, Store listing sync, run settings and fleet health.",
   "keywords": [
     "apify",

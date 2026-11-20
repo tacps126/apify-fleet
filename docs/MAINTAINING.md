@@ -33,17 +33,39 @@ To change the protection later, edit `.github/rulesets/main.json` and update the
 
 ## Publishing to npm (off until enabled)
 
-The Publish workflow runs when a GitHub Release is published, but only when the repository variable
-`PUBLISH_ENABLED` is `true`. To turn it on:
+The Publish workflow publishes a GitHub Release to npm with npm trusted publishing: the job proves it
+is this repository's `publish.yml` through GitHub's OIDC token and npm gives it a one-time publish
+credential. No npm token is stored anywhere, and every version gets provenance. It runs only when the
+repository variable `PUBLISH_ENABLED` is `true`, and skips versions already on npm.
 
-1. Create an automation (or granular, publish-only) token on npmjs.com and add it as the repository
-   secret `NPM_TOKEN`.
-2. Settings, Environments: create `npm`. Optionally add yourself as a required reviewer, so every
-   publish waits for your click.
-3. Settings, Secrets and variables, Actions, Variables: add `PUBLISH_ENABLED` = `true`.
+1. **First version by hand** (npm can only trust a workflow for a package that already exists).
+   From a clean checkout of the release tag, signed in with `npm login` (two-factor code when asked):
 
-To publish a release made before publishing was on: Actions, Publish, Run workflow, tag `vX.Y.Z`.
-Packages are published with provenance.
+   ```bash
+   git switch --detach v0.1.0
+   npm ci && npm publish --access public
+   git switch -
+   ```
+
+2. **Trust the workflow** on npmjs.com: the package, Settings, Trusted publishing, GitHub Actions:
+   organization or user `tacps126`, repository `apify-fleet`, workflow file `publish.yml`, environment
+   `npm`. Allowed actions: `npm stage publish` is always on. Leave "Allow npm publish" unticked
+   (recommended): each release is then staged and goes live only when you approve it on npmjs.com
+   (the package, Staged packages) with your two-factor code. To publish with no approval instead,
+   tick "Allow npm publish" and set the repository variable `NPM_PUBLISH_MODE` = `publish`. "Allow
+   npm dist-tag" is not needed. Label is optional and only for you (for example
+   `GitHub Actions release`). Set up connection, then under Publishing access choose "Require
+   two-factor authentication and disallow tokens". The trusted publisher must
+   publish once within 2 days of being added, or it expires: do step 4 soon after.
+3. **GitHub:** Settings, Environments: create `npm` (optionally add yourself as a required reviewer,
+   so every publish waits for your click). Settings, Secrets and variables, Actions, Variables: add
+   `PUBLISH_ENABLED` = `true`. No secrets are needed.
+   In each environment, under Deployment branches and tags, choose "Selected branches and tags"
+   and add the branch `main` and the tag pattern `v*`: publishing then runs only for release tags
+   and from `main`, never from another branch.
+4. **Check it:** bump the version in a pull request and merge it (Releasing, above). The Release
+   workflow tags it and starts Publish. A release made before publishing was on can be published
+   from Actions, Publish, Run workflow, tag `vX.Y.Z`.
 
 ## Housekeeping
 
