@@ -1,0 +1,21 @@
+# apify-fleet
+
+> Command-line tool to manage many Apify Actors at once: list and health-check the whole fleet, push the Actors that changed (as many at once as the account allows), rebuild, clean up old builds, runs and storages, and keep Store listing text and run settings in files. Every changing command is a dry run until `--apply`. Works with any repository layout; `fleet.json` is optional. Node.js 22+, no runtime dependencies.
+
+Install: `npm install -g apify-fleet` or `npx apify-fleet <command>`. Auth: `APIFY_TOKEN`, else the Apify CLI login.
+
+## Docs
+
+- [AI integration guide](https://github.com/tacps126/apify-fleet/blob/main/docs/AI-INTEGRATION.md): step-by-step for an AI assistant setting up apify-fleet in a project or CI, with safe command patterns and prompts
+- [README](https://github.com/tacps126/apify-fleet/blob/main/README.md): commands, selection, concurrency, repository layouts, fleet.json keys, options, safety notes, use from code
+- [fleet.json schema](https://github.com/tacps126/apify-fleet/blob/main/fleet.schema.json)
+
+## Examples
+
+- [Monorepo with fleet.json and a listing file](https://github.com/tacps126/apify-fleet/tree/main/examples/monorepo)
+- [GitHub Actions: nightly health, weekly cleanup, push changed Actors](https://github.com/tacps126/apify-fleet/tree/main/examples/github-actions)
+
+## Optional
+
+- [Changelog](https://github.com/tacps126/apify-fleet/blob/main/CHANGELOG.md)
+- [Contributing](https://github.com/tacps126/apify-fleet/blob/main/CONTRIBUTING.md)

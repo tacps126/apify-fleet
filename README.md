@@ -205,6 +205,14 @@ console.log(report.rows);
 Every command takes a `FleetApi`, so you can pass your own implementation (a proxy, a cache, a fake in
 tests).
 
+## With an AI assistant
+
+[docs/AI-INTEGRATION.md](docs/AI-INTEGRATION.md) is one page an assistant (Claude, ChatGPT, Copilot,
+Cursor) can follow to set up `apify-fleet` in your project or CI: what to check, safe command
+patterns (dry run first, `--apply` only after you agree), CI snippets, a checklist and prompts to
+paste. It ships in the npm package too, with [llms.txt](llms.txt). Agents changing this repository read
+[AGENTS.md](AGENTS.md).
+
 ## More
 
 - [examples/](examples): a sample `fleet.json`, a listing file, GitHub Actions for nightly health,

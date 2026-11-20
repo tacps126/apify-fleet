@@ -24,6 +24,7 @@ First release.
 - `sync`: Store listing text and categories from `fleet.json` or `.actor/listing.json`, changed
   fields only, with length warnings.
 - `settings`: memory, timeout, build tag, restart on error and Standby, changed fields only.
+- AI-ready docs: docs/AI-INTEGRATION.md (shipped in the package), llms.txt, AGENTS.md.
 - Dry run by default, `--apply` to change; `--json` reports; exit codes 0, 1, 2, 3.
 - Token from `APIFY_TOKEN` or `apify login`; with a keychain (OAuth) login of a newer Apify CLI,
   requests go through `apify api` instead, retrying when concurrent CLI calls race.

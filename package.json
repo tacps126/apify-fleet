@@ -28,6 +28,8 @@
   "files": [
     "dist",
     "README.md",
+    "llms.txt",
+    "docs/AI-INTEGRATION.md",
     "LICENSE",
     "fleet.schema.json"
   ],
