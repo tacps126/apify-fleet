@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: npm
     permissions:
-      id-token: write # npm provenance
+      id-token: write # npm trusted publishing: no token stored
     steps:
       - uses: actions/checkout@v7
         with:
@@ -30,14 +30,31 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 24
-          registry-url: https://registry.npmjs.org
           cache: npm
       - run: npm ci
+      - name: Use npm 11.5.1 or newer (trusted publishing)
+        run: npm install -g npm@latest
       - name: Publish
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_PUBLISH_MODE: ${{ vars.NPM_PUBLISH_MODE }}
         run: |
-          case "$(node -p 'require("./package.json").version')" in
-            *-*) npm publish --provenance --access public --tag next ;;
-            *) npm publish --provenance --access public ;;
-          esac
+          name=$(node -p 'require("./package.json").name')
+          version=$(node -p 'require("./package.json").version')
+          if npm view "$name@$version" version >/dev/null 2>&1; then
+            echo "$name@$version is already on npm; nothing to publish"
+            exit 0
+          fi
+          # No token: npm trusted publishing exchanges this job's OIDC identity
+          # (id-token: write) for a one-time publish credential, with provenance.
+          # NPM_PUBLISH_MODE (repository variable): "stage" (default) puts the
+          # version in npm's staging area for you to approve on npmjs.com with
+          # two-factor authentication; "publish" makes it live at once (the
+          # trusted publisher must have "Allow npm publish" ticked).
+          tag=latest
+          case "$version" in *-*) tag=next ;; esac
+          if [ "$NPM_PUBLISH_MODE" = publish ]; then
+            npm publish --access public --tag "$tag"
+          else
+            npm stage publish --access public --tag "$tag"
+            echo "::notice::$name@$version is staged: approve it on npmjs.com (package, Staged packages)"
+          fi
